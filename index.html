@@ -28,10 +28,27 @@
     .name{font-weight:700;font-size:16px}
     .id{font-size:13px;color:var(--muted)}
     .no-results{padding:28px;text-align:center;color:var(--muted)}
-    .actions{display:flex;gap:8px;margin-top:8px}
-    .small{font-size:13px;padding:8px 10px;border-radius:8px;border:1px solid #e6e9ee;background:#fff;cursor:pointer}
     footer{margin-top:20px;font-size:13px;color:var(--muted)}
     mark{background: #fff3bf; padding:0 4px; border-radius:3px}
+    /* Fixed buttons styling */
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap; /* wrap on small screens */
+    }
+    .small {
+      font-size: 13px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #d0d7de; /* darker border */
+      background: #f9fafb;       /* light gray background */
+      color: #111827;            /* dark text */
+      white-space: nowrap;       /* no line break inside button text */
+      cursor: pointer;
+    }
+    .small:hover {
+      background: #e5e7eb;
+    }
     @media (max-width:560px){
       header{flex-direction:column;align-items:flex-start}
       .search-box{width:100%}
@@ -61,12 +78,11 @@
     <div id="noResults" class="no-results" hidden>没有找到符合的学生</div>
 
     <footer>
-      Data source: 上传档案（班级名单）。:contentReference[oaicite:1]{index=1}
+      Data source: 上传档案（班级名单）。
     </footer>
   </main>
 
   <script>
-    // Student data from the uploaded doc (number, name, id)
     const students = [
       {num:1, name:"邱穆芸", id:"242154"},
       {num:2, name:"陈妍希", id:"242159"},
@@ -117,7 +133,6 @@
       {num:47, name:"杨仁喆", id:"242184"}
     ];
 
-    // Elements
     const listEl = document.getElementById('list');
     const qEl = document.getElementById('q');
     const clearBtn = document.getElementById('clear');
@@ -126,10 +141,8 @@
     const noResultsEl = document.getElementById('noResults');
     const resultCount = document.getElementById('resultCount');
 
-    // Utility: escape regex special chars
     function escRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
-    // Render list (filtered)
     function render(results=[], highlight=null){
       listEl.innerHTML = '';
       if(results.length === 0){
@@ -138,28 +151,25 @@
         return;
       }
       noResultsEl.hidden = true;
-      resultCount.textContent = `找到 ${results.length} 位学生（显示前 ${results.length} 个）`;
+      resultCount.textContent = `找到 ${results.length} 位学生`;
       for(const stu of results){
         const card = document.createElement('article');
         card.className = 'card';
         card.tabIndex = 0;
         card.id = `stu-${stu.num}`;
-
-        // highlight simple: replace matched text with <mark>
         const q = highlight;
         let nameHtml = stu.name;
         if(q){
           const r = new RegExp(escRegex(q), 'ig');
           nameHtml = stu.name.replace(r, m => `<mark>${m}</mark>`);
         }
-
         card.innerHTML = `
-          <div class="meta">学号：<strong>${stu.num}</strong></div>
+          <div class="meta"座号：<strong>${stu.num}</strong></div>
           <div class="name">${nameHtml}</div>
-          <div class="id">学号/学籍号: ${stu.id}</div>
+          <div class="id">学号：${stu.id}</div>
           <div class="actions">
             <button class="small" data-copy="${stu.num}">复制信息</button>
-            <button class="small" data-copy-id="${stu.id}">复制学籍号</button>
+            <button class="small" data-copy-id="${stu.id}">复制学号</button>
             <button class="small" data-link="${stu.num}">取得链接</button>
           </div>
         `;
@@ -167,10 +177,8 @@
       }
     }
 
-    // Initial render: show all
     render(students);
 
-    // Search logic: match if query is substring of name or exact/substring of number
     function doSearch(q){
       q = (q||'').trim();
       if(!q){
@@ -178,93 +186,54 @@
         return;
       }
       const qLower = q.toLowerCase();
-      // If q looks like a number and matches a student num exactly, prioritize exact match
-      const numQuery = Number(q);
       let results = students.filter(s=>{
         if(String(s.num) === q) return true;
         if(String(s.id).includes(q)) return true;
         if(s.name.indexOf(q) !== -1) return true;
-        // case-insensitive for ASCII-name queries (if any)
         if(s.name.toLowerCase().indexOf(qLower) !== -1) return true;
         return false;
       });
-      // If no results but q contains digits only, try numeric substring match
       if(results.length === 0 && /^\d+$/.test(q)){
         results = students.filter(s => String(s.num).includes(q) || String(s.id).includes(q));
       }
       render(results, q);
-      // scroll first result into view
       if(results.length > 0){
-        const firstId = `stu-${results[0].num}`;
-        const el = document.getElementById(firstId);
+        const el = document.getElementById(`stu-${results[0].num}`);
         if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
       }
     }
 
-    // Events
-    qEl.addEventListener('input', e => {
-      doSearch(e.target.value);
-    });
+    qEl.addEventListener('input', e => { doSearch(e.target.value); });
+    qEl.addEventListener('keydown', e=>{ if(e.key === 'Enter'){ e.preventDefault(); doSearch(qEl.value); } });
+    clearBtn.addEventListener('click', ()=>{ qEl.value = ''; doSearch(''); qEl.focus(); });
+    firstBtn.addEventListener('click', ()=>{ const q = qEl.value.trim(); if(!q){ alert('请先输入学号或姓名'); qEl.focus(); return; } doSearch(q); const firstCard = listEl.querySelector('.card'); if(firstCard) firstCard.focus(); });
+    showAllBtn.addEventListener('click', ()=>{ qEl.value = ''; doSearch(''); qEl.focus(); });
 
-    qEl.addEventListener('keydown', e=>{
-      if(e.key === 'Enter'){
-        e.preventDefault();
-        doSearch(qEl.value);
-      }
-    });
-
-    clearBtn.addEventListener('click', ()=>{
-      qEl.value = '';
-      doSearch('');
-      qEl.focus();
-    });
-
-    firstBtn.addEventListener('click', ()=>{
-      const q = qEl.value.trim();
-      if(!q){ alert('请先输入学号或姓名'); qEl.focus(); return; }
-      doSearch(q);
-      // focus first card
-      const firstCard = listEl.querySelector('.card');
-      if(firstCard) firstCard.focus();
-    });
-
-    showAllBtn.addEventListener('click', ()=>{
-      qEl.value = '';
-      doSearch('');
-      qEl.focus();
-    });
-
-    // Delegation for copy / get link
     document.addEventListener('click', e=>{
       const copyBtn = e.target.closest('[data-copy]');
       if(copyBtn){
         const num = copyBtn.getAttribute('data-copy');
         const stu = students.find(s=>String(s.num) === String(num));
         if(stu){
-          const text = `学号：${stu.num}\n姓名：${stu.name}\n学籍号：${stu.id}`;
-          navigator.clipboard?.writeText(text).then(()=>alert('已复制到剪贴板'),()=>alert('复制失败'));
+          const text = `座号：${stu.num}\n姓名：${stu.name}\n学号：${stu.id}`;
+          navigator.clipboard?.writeText(text).then(()=>alert('已复制到剪贴板'));
         }
       }
       const copyIdBtn = e.target.closest('[data-copy-id]');
       if(copyIdBtn){
-        const idbtn = copyIdBtn.getAttribute('data-copy-id');
-        // find nearest card id (not needed) — just copy visible id text
-        const btn = copyIdBtn;
-        const parent = btn.closest('.card');
+        const parent = copyIdBtn.closest('.card');
         const idText = parent ? parent.querySelector('.id').textContent : '';
-        navigator.clipboard?.writeText(idText).then(()=>alert('已复制学籍号'),()=>alert('复制失败'));
+        navigator.clipboard?.writeText(idText).then(()=>alert('已复制学号'));
       }
       const linkBtn = e.target.closest('[data-link]');
       if(linkBtn){
         const n = linkBtn.getAttribute('data-link');
         const link = `${location.origin}${location.pathname}#stu-${n}`;
-        // change URL hash so user can share
         location.hash = `stu-${n}`;
-        navigator.clipboard?.writeText(link).then(()=>alert('学生链接已复制'),()=>alert('复制链接失败'));
+        navigator.clipboard?.writeText(link).then(()=>alert('学生链接已复制'));
       }
     });
 
-    // If page loaded with a hash like #stu-12 or ?q=陈, prefill search / focus
     window.addEventListener('load', ()=>{
       const h = location.hash;
       const params = new URLSearchParams(location.search);
@@ -280,14 +249,12 @@
       }
     });
 
-    // Accessibility: pressing "/" focuses search input
     window.addEventListener('keydown', (e)=>{
       if(e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA'){
         e.preventDefault();
         qEl.focus();
       }
     });
-
   </script>
 </body>
 </html>
