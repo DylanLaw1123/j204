@@ -164,12 +164,12 @@
           nameHtml = stu.name.replace(r, m => `<mark>${m}</mark>`);
         }
         card.innerHTML = `
-          <div class="meta">学号：<strong>${stu.num}</strong></div>
+          <div class="meta"座号：<strong>${stu.num}</strong></div>
           <div class="name">${nameHtml}</div>
-          <div class="id">学籍号: ${stu.id}</div>
+          <div class="id">学号：${stu.id}</div>
           <div class="actions">
             <button class="small" data-copy="${stu.num}">复制信息</button>
-            <button class="small" data-copy-id="${stu.id}">复制学籍号</button>
+            <button class="small" data-copy-id="${stu.id}">复制学号</button>
             <button class="small" data-link="${stu.num}">取得链接</button>
           </div>
         `;
@@ -215,7 +215,7 @@
         const num = copyBtn.getAttribute('data-copy');
         const stu = students.find(s=>String(s.num) === String(num));
         if(stu){
-          const text = `学号：${stu.num}\n姓名：${stu.name}\n学籍号：${stu.id}`;
+          const text = `座号：${stu.num}\n姓名：${stu.name}\n学号：${stu.id}`;
           navigator.clipboard?.writeText(text).then(()=>alert('已复制到剪贴板'));
         }
       }
@@ -223,7 +223,7 @@
       if(copyIdBtn){
         const parent = copyIdBtn.closest('.card');
         const idText = parent ? parent.querySelector('.id').textContent : '';
-        navigator.clipboard?.writeText(idText).then(()=>alert('已复制学籍号'));
+        navigator.clipboard?.writeText(idText).then(()=>alert('已复制学号'));
       }
       const linkBtn = e.target.closest('[data-link]');
       if(linkBtn){
