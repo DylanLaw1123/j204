@@ -1,124 +1,272 @@
-<!DOCTYPE html>
-<html lang="zh">
+<!doctype html>
+<html lang="zh-Hans">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>初二4 班级名单</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>初二4 — 班级名单搜索</title>
   <style>
-    body {
-      font-family: 'Noto Sans SC', sans-serif;
+    :root{
+      --bg:#f6f8fa; --card:#ffffff; --accent:#0b6efd; --muted:#6b7280;
+      --shadow: 0 6px 18px rgba(16,24,40,0.06);
+      font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
     }
-    ::placeholder {
-      color: #9ca3af;
+    html,body{height:100%;margin:0;background:var(--bg);color:#111827}
+    .wrap{max-width:980px;margin:36px auto;padding:20px}
+    header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+    h1{font-size:20px;margin:0}
+    p.lead{margin:0;color:var(--muted);font-size:14px}
+    .search-box{display:flex;gap:8px;margin:18px 0;flex-wrap:wrap}
+    input[type="search"]{
+      flex:1;min-width:220px;padding:12px 14px;border:1px solid #e6e9ee;border-radius:8px;
+      box-shadow:var(--shadow);font-size:15px;
+    }
+    button{background:var(--accent);color:#fff;border:none;padding:10px 12px;border-radius:8px;cursor:pointer}
+    button.secondary{background:#fff;color:var(--accent);border:1px solid #dbeafe}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:12px}
+    .card{background:var(--card);padding:12px;border-radius:10px;box-shadow:var(--shadow);border:1px solid rgba(15,23,42,0.03)}
+    .meta{font-size:13px;color:var(--muted);margin-bottom:8px}
+    .name{font-weight:700;font-size:16px}
+    .id{font-size:13px;color:var(--muted)}
+    .no-results{padding:28px;text-align:center;color:var(--muted)}
+    footer{margin-top:20px;font-size:13px;color:var(--muted)}
+    mark{background: #fff3bf; padding:0 4px; border-radius:3px}
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .small {
+      font-size: 13px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #d0d7de;
+      background: #f9fafb;
+      color: #111827;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .small:hover {
+      background: #e5e7eb;
+    }
+    /* 底部版权样式 */
+    .copyright {
+      text-align: center;
+      font-size: 12px;
+      color: #999;
+      margin-top: 40px;
+      padding: 10px 0;
+    }
+    @media (max-width:560px){
+      header{flex-direction:column;align-items:flex-start}
+      .search-box{width:100%}
     }
   </style>
 </head>
-<body class="bg-gray-100 min-h-screen p-6 flex flex-col justify-between">
-  <div class="w-full max-w-4xl mx-auto bg-white p-8 rounded-2xl shadow-xl">
-    <h1 class="text-3xl font-bold mb-6 text-center text-blue-700">初二4 班级名单</h1>
-    
-    <input 
-      id="searchInput" 
-      type="text" 
-      placeholder="🔍 搜索姓名、座号、学号或性别..." 
-      class="w-full p-3 mb-6 border border-gray-300 rounded-xl text-lg focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-    />
+<body>
+  <main class="wrap" role="main">
+    <header>
+      <div>
+        <h1>初二4 — 班级名单（可搜：学号/姓名）</h1>
+        <p class="lead">在下方输入学号（如 <code>1</code>）或姓名（例如 <code>陈妍希</code>）即可快速查找。</p>
+      </div>
+    </header>
 
-    <div class="overflow-x-auto">
-      <table class="min-w-full border border-gray-300 rounded-xl">
-        <thead>
-          <tr class="bg-blue-100 text-blue-800">
-            <th class="py-3 px-4 border">座号</th>
-            <th class="py-3 px-4 border">姓名</th>
-            <th class="py-3 px-4 border">学号</th>
-            <th class="py-3 px-4 border">性别</th>
-            <th class="py-3 px-4 border">班级</th>
-          </tr>
-        </thead>
-        <tbody id="nameTable">
-          <!-- 数据将注入这里 -->
-        </tbody>
-      </table>
+    <div class="search-box" role="search" aria-label="搜索学生">
+      <input id="q" type="search" placeholder="输入学号或姓名，然后按 Enter 或直接查看下方结果" aria-label="搜索学号或姓名" />
+      <button id="clear">清除</button>
+      <button id="first" class="secondary">跳到第一个匹配</button>
+      <button id="showAll" class="secondary">显示全部</button>
     </div>
-  </div>
 
-  <footer class="text-center text-gray-500 text-sm mt-6">
-    &copy; 2025 Created by DylanLaw. All rights reserved.
-  </footer>
+    <div id="resultCount" style="font-size:13px;color:var(--muted)"></div>
+
+    <section id="list" class="grid" aria-live="polite"></section>
+
+    <div id="noResults" class="no-results" hidden>没有找到符合的学生</div>
+
+    <footer>
+      Data source: 上传档案（班级名单）。
+    </footer>
+
+    <!-- 新增版权信息 -->
+    <div class="copyright">
+      2025 Created by DylanLaw. All rights reserved.
+    </div>
+  </main>
 
   <script>
-    const names = [
-      "邱穆芸", "陈妍希", "张芷欣", "杨时瑜", "颜姿彤", "许亦萱", "陈嘉恩", "陈钏宁",
-      "李静恩", "刘瑞恩", "黄禹嫣", "妮娅", "陈姿卉", "何汶宣", "王歆茹", "潘姿颖",
-      "施凯馨", "陈渝恩", "戴湘霖", "王婧涵", "许悦影", "朱俊绅", "陈毅祥", "谢承邑",
-      "张智勇", "何凯旭", "赖家禾", "江致承", "刘俊祥", "卢隽益", "廖炫鑫", "刘宽辅",
-      "卢裕城", "黄康桀", "伍思源", "彭宇乐", "潘家扬", "陈晋佑", "陈有权", "余根权",
-      "黄凯杰", "黄恩杰", "黄俊熹", "黄明杰", "叶峻睿", "叶礼诚", "杨仁喆"
+    const students = [
+      {num:1, name:"邱穆芸", id:"242154"},
+      {num:2, name:"陈妍希", id:"242159"},
+      {num:3, name:"张芷欣", id:"242156"},
+      {num:4, name:"杨时瑜", id:"242149"},
+      {num:5, name:"颜姿彤", id:"242163"},
+      {num:6, name:"许亦萱", id:"242153"},
+      {num:7, name:"陈嘉恩", id:"242168"},
+      {num:8, name:"陈钏宁", id:"242155"},
+      {num:9, name:"李静恩", id:"242158"},
+      {num:10, name:"刘瑞恩", id:"242160"},
+      {num:11, name:"黄禹嫣", id:"242164"},
+      {num:12, name:"妮娅", id:"242166"},
+      {num:13, name:"陈姿卉", id:"242162"},
+      {num:14, name:"何汶宣", id:"242165"},
+      {num:15, name:"王歆茹", id:"242151"},
+      {num:16, name:"潘姿颖", id:"242147"},
+      {num:17, name:"施凯馨", id:"242150"},
+      {num:18, name:"陈渝恩", id:"242148"},
+      {num:19, name:"戴湘霖", id:"242157"},
+      {num:20, name:"王婧涵", id:"242152"},
+      {num:21, name:"许悦影", id:"242167"},
+      {num:22, name:"朱俊绅", id:"242189"},
+      {num:23, name:"陈毅祥", id:"242177"},
+      {num:24, name:"谢承邑", id:"242190"},
+      {num:25, name:"张智勇", id:"242176"},
+      {num:26, name:"何凯旭", id:"242173"},
+      {num:27, name:"赖家禾", id:"242194"},
+      {num:28, name:"江致承", id:"242171"},
+      {num:29, name:"刘俊祥", id:"242186"},
+      {num:30, name:"卢隽益", id:"242187"},
+      {num:31, name:"廖炫鑫", id:"242179"},
+      {num:32, name:"刘宽辅", id:"242170"},
+      {num:33, name:"卢裕城", id:"242188"},
+      {num:34, name:"黄康桀", id:"242191"},
+      {num:35, name:"伍思源", id:"242180"},
+      {num:36, name:"彭宇乐", id:"242181"},
+      {num:37, name:"潘家扬", id:"242169"},
+      {num:38, name:"陈晋佑", id:"242178"},
+      {num:39, name:"陈有权", id:"242182"},
+      {num:40, name:"余根权", id:"242175"},
+      {num:41, name:"黄凯杰", id:"242192"},
+      {num:42, name:"黄恩杰", id:"242183"},
+      {num:43, name:"黄俊熹", id:"242193"},
+      {num:44, name:"黄明杰", id:"242185"},
+      {num:45, name:"叶峻睿", id:"242174"},
+      {num:46, name:"叶礼诚", id:"242172"},
+      {num:47, name:"杨仁喆", id:"242184"}
     ];
 
-    const ids = [
-      "242154", "242159", "242156", "242149", "242163", "242153", "242168",
-      "242155", "242158", "242160", "242164", "242166", "242162", "242165", "242151", "242147",
-      "242150", "242148", "242157", "242152", "242167", "242189", "242177", "242190",
-      "242176", "242173", "242194", "242171", "242186", "242187", "242179", "242170",
-      "242188", "242191", "242180", "242181", "242169", "242178", "242182", "242175",
-      "242192", "242183", "242193", "242185", "242174", "242172", "242184"
-    ];
+    const listEl = document.getElementById('list');
+    const qEl = document.getElementById('q');
+    const clearBtn = document.getElementById('clear');
+    const firstBtn = document.getElementById('first');
+    const showAllBtn = document.getElementById('showAll');
+    const noResultsEl = document.getElementById('noResults');
+    const resultCount = document.getElementById('resultCount');
 
-    const tableBody = document.getElementById("nameTable");
-    const searchInput = document.getElementById("searchInput");
+    function escRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
-    const studentEntries = names.map((name, idx) => ({
-      seat: idx + 1,
-      name,
-      id: ids[idx],
-      gender: idx + 1 <= 21 ? "女生" : "男生",
-      class: "初二4"
-    }));
-
-    function renderTable(filter = "") {
-      const keyword = filter.trim().toLowerCase();
-      tableBody.innerHTML = "";
-
-      const filtered = studentEntries.filter(entry =>
-        entry.name.toLowerCase().includes(keyword) ||
-        entry.seat.toString().includes(keyword) ||
-        entry.id.includes(keyword) ||
-        entry.gender.includes(keyword)
-      );
-
-      if (filtered.length === 0) {
-        const tr = document.createElement("tr");
-        const td = document.createElement("td");
-        td.colSpan = 5;
-        td.className = "text-center text-red-500 py-4 bg-red-50";
-        td.textContent = "未找到匹配的学生";
-        tr.appendChild(td);
-        tableBody.appendChild(tr);
+    function render(results=[], highlight=null){
+      listEl.innerHTML = '';
+      if(results.length === 0){
+        noResultsEl.hidden = false;
+        resultCount.textContent = "找到 0 位学生";
         return;
       }
-
-      filtered.forEach(entry => {
-        const tr = document.createElement("tr");
-        tr.className = "hover:bg-blue-50 transition";
-
-        tr.innerHTML = `
-          <td class="border px-4 py-2 text-center">${entry.seat}</td>
-          <td class="border px-4 py-2">${entry.name}</td>
-          <td class="border px-4 py-2">${entry.id}</td>
-          <td class="border px-4 py-2 text-center">${entry.gender}</td>
-          <td class="border px-4 py-2 text-center">${entry.class}</td>
+      noResultsEl.hidden = true;
+      resultCount.textContent = `找到 ${results.length} 位学生`;
+      for(const stu of results){
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.tabIndex = 0;
+        card.id = `stu-${stu.num}`;
+        const q = highlight;
+        let nameHtml = stu.name;
+        if(q){
+          const r = new RegExp(escRegex(q), 'ig');
+          nameHtml = stu.name.replace(r, m => `<mark>${m}</mark>`);
+        }
+        card.innerHTML = `
+          <div class="meta">学号：<strong>${stu.num}</strong></div>
+          <div class="name">${nameHtml}</div>
+          <div class="id">学籍号: ${stu.id}</div>
+          <div class="actions">
+            <button class="small" data-copy="${stu.num}">复制信息</button>
+            <button class="small" data-copy-id="${stu.id}">复制学籍号</button>
+            <button class="small" data-link="${stu.num}">取得链接</button>
+          </div>
         `;
-        tableBody.appendChild(tr);
-      });
+        listEl.appendChild(card);
+      }
     }
 
-    searchInput.addEventListener("input", () => {
-      renderTable(searchInput.value);
+    render(students);
+
+    function doSearch(q){
+      q = (q||'').trim();
+      if(!q){
+        render(students);
+        return;
+      }
+      const qLower = q.toLowerCase();
+      let results = students.filter(s=>{
+        if(String(s.num) === q) return true;
+        if(String(s.id).includes(q)) return true;
+        if(s.name.indexOf(q) !== -1) return true;
+        if(s.name.toLowerCase().indexOf(qLower) !== -1) return true;
+        return false;
+      });
+      if(results.length === 0 && /^\d+$/.test(q)){
+        results = students.filter(s => String(s.num).includes(q) || String(s.id).includes(q));
+      }
+      render(results, q);
+      if(results.length > 0){
+        const el = document.getElementById(`stu-${results[0].num}`);
+        if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
+      }
+    }
+
+    qEl.addEventListener('input', e => { doSearch(e.target.value); });
+    qEl.addEventListener('keydown', e=>{ if(e.key === 'Enter'){ e.preventDefault(); doSearch(qEl.value); } });
+    clearBtn.addEventListener('click', ()=>{ qEl.value = ''; doSearch(''); qEl.focus(); });
+    firstBtn.addEventListener('click', ()=>{ const q = qEl.value.trim(); if(!q){ alert('请先输入学号或姓名'); qEl.focus(); return; } doSearch(q); const firstCard = listEl.querySelector('.card'); if(firstCard) firstCard.focus(); });
+    showAllBtn.addEventListener('click', ()=>{ qEl.value = ''; doSearch(''); qEl.focus(); });
+
+    document.addEventListener('click', e=>{
+      const copyBtn = e.target.closest('[data-copy]');
+      if(copyBtn){
+        const num = copyBtn.getAttribute('data-copy');
+        const stu = students.find(s=>String(s.num) === String(num));
+        if(stu){
+          const text = `学号：${stu.num}\n姓名：${stu.name}\n学籍号：${stu.id}`;
+          navigator.clipboard?.writeText(text).then(()=>alert('已复制到剪贴板'));
+        }
+      }
+      const copyIdBtn = e.target.closest('[data-copy-id]');
+      if(copyIdBtn){
+        const parent = copyIdBtn.closest('.card');
+        const idText = parent ? parent.querySelector('.id').textContent : '';
+        navigator.clipboard?.writeText(idText).then(()=>alert('已复制学籍号'));
+      }
+      const linkBtn = e.target.closest('[data-link]');
+      if(linkBtn){
+        const n = linkBtn.getAttribute('data-link');
+        const link = `${location.origin}${location.pathname}#stu-${n}`;
+        location.hash = `stu-${n}`;
+        navigator.clipboard?.writeText(link).then(()=>alert('学生链接已复制'));
+      }
     });
 
-    renderTable();
+    window.addEventListener('load', ()=>{
+      const h = location.hash;
+      const params = new URLSearchParams(location.search);
+      if(params.has('q')){
+        qEl.value = params.get('q');
+        doSearch(qEl.value);
+        return;
+      }
+      if(h && h.startsWith('#stu-')){
+        const num = h.replace('#stu-','');
+        qEl.value = num;
+        doSearch(num);
+      }
+    });
+
+    window.addEventListener('keydown', (e)=>{
+      if(e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA'){
+        e.preventDefault();
+        qEl.focus();
+      }
+    });
   </script>
 </body>
 </html>
